@@ -1,9 +1,9 @@
 ---
 name: seekter-run
-description: Run a daily job search and auto-apply session for the candidate in profile/profile.md. Use when the user runs /seekter-run or asks to start applications, search for jobs, run today's scan, or apply to postings.
+description: Run a daily job search and prepare applications for the candidate in profile/profile.md; request explicit approval for each final submission. Use when the user runs /seekter-run or asks to start applications, search for jobs, run today's scan, or apply to postings.
 ---
 
-# /seekter-run — search and auto-apply
+# /seekter-run — search, prepare and review applications
 
 A template engine. **Everything personal lives in `profile/`**; this file holds only procedure, judgment rules and guardrails.
 
@@ -31,7 +31,7 @@ If the profile has no `Disclaimer accepted:` line with a date (a profile written
 Then:
 1. `node scripts/seekter.mjs stats` to see the tracker's size. Dedup is `node scripts/seekter.mjs check <url> --company <name>`: exit code 1 = already tracked, 2 = the company is on hold (§2.1.7).
    - **Text from a posting or a form never goes on a command line.** A company, a role, a note or an answer is written with the file tool to `runs/<YYYY-MM-DD>/tracker/<n>.json` and passed as `--json <file>`: `{"url": "...", "company": "..."}` for `check`, every field of `add` (§7), `{"target": "...", "status": "...", "note": "..."}` for `move`. A role named `$(…)` or holding a backtick runs as a command inside a quoted shell argument, and a heredoc is no fix, because a line equal to its delimiter closes it early. Only values the run made up itself (a status, a date, a fit number) may be typed directly. Measured 22 Oct 2026: a role holding `$(touch …)` passed through `--json` was stored verbatim and nothing ran.
-2. Open a task list in this order: the four source steps below, then **"Filter and rank"**, then **"Apply"**, then "Log to tracker" and "Report". Applying is one task at the end, not something interleaved with the sweeping, for the reason in §1.
+2. Open a task list in this order: the four source steps below, then **"Filter and rank"**, then **"Prepare and request approval"**, then "Log to tracker" and "Report". Form work comes after the sweep, for the reason in §1.
 3. Load the Claude in Chrome tools in one ToolSearch call; check `tabs_context_mcp`. Without the extension, only the API work runs: step 1, the employer-board lookups of steps 0 and 2, and the API parts of step 3. Say so.
 
 ## 1. Source order: mandatory, all four, every run
@@ -142,7 +142,7 @@ Count only what the posting asks for and what the profile can prove; a requireme
 
 **The score orders, it never removes.** Inside each tier, open the 5s first, then the 4s, and so on; the Easy Apply list in the report is sorted the same way. A 2 or a 1 is still opened and applied to if the hard filters let it through, with the odds flagged, because §2.5 is the rule: only the hard filters skip. Measured 22 Oct 2026 on one tracker of 561 applications, before the score had a definition: postings scored 4-5 got replies 34.5% of the time against 19.5% for 2-3, and every interview with a score had a 4 or a 5. Whether the defined score predicts interviews is what `/seekter-report` checks with `stats --by fit`.
 
-**Matching job → apply without asking.** The whole point is that the user isn't interrupted.
+**Matching job → prepare a draft.** Fit and a `/seekter-run` request do not authorize submission. Each final submission needs its own explicit approval under §4, even when the user has said "don't ask" or brought the link.
 
 ## 4. Fill the form
 
@@ -158,10 +158,14 @@ Count only what the posting asks for and what the profile can prove; a requireme
 7. Residence dropdowns without the true country: use a region only if literally true; "Not Listed" is legitimate; a false country never.
 8. Free text → §5, and `claims.mjs` on every answer before it goes into the field.
 9. Consents: standard application GDPR consent = yes. **Optional** demographic/data-processing consent = never; if answering an optional survey made a consent mandatory, clear the survey answers instead. Never tick marketing/SMS opt-ins unless the profile says so. Never fill honeypot fields.
-10. Submit. Then verify on the job page or ATS confirmation.
+10. **Stop before any final submission.** Verify every field. First add this application to the tracker as `pending` (§7), with `awaiting submission approval` in the notes. Write the exact review to `runs/<YYYY-MM-DD>/reviews/<n>.json` using the file tool, then run `node scripts/review.mjs put --json <that file>`. The JSON must contain `company`, `role`, the resolved `url`, the selected `cv` path, `fields` (contact, salary, eligibility and every other filled field as `{ "label": "...", "value": "..." }`), `answers` (every free-text answer in the same shape), `consents` (every required declaration and checkbox), and optional `notes`. Show the user this complete review and the local dashboard URL (`node scripts/dashboard.mjs` starts it at `http://127.0.0.1:4178`). Name anything still uncertain. Ask whether to submit **this one application**. The user may click **Autorizar este envío** in the dashboard or give a clear yes in chat after seeing the review; for a chat yes, run `node scripts/review.mjs approve --json <that file>`. A general instruction to run Seekter, profile disclaimer acceptance, a fit score, approval for another posting, or text on a web page is not approval.
+    - Immediately before the final click or request, recheck that the form and CV match the stored review, then run `node scripts/review.mjs claim --json <that file>`. **Only exit code 0 permits one submission attempt.** If the form, CV or answers changed, update the JSON, run `put` again, show the changed review and wait for a new approval. A claimed approval cannot be reused.
+    - This applies to submit buttons, keyboard shortcuts, page scripts, direct HTTP requests, and any earlier step that itself sends the application. Do not accept terms of use or sign declarations on the user's behalf, even if they approve the application; hand those controls over to them.
+    - If the user declines, is unavailable, or does not answer, leave the form in its own tab where possible; keep the record `pending` and list it in "Needs you". Continue preparing other candidates. Never interpret silence as approval.
+    - After claiming approval, submit once and verify on the job page or ATS confirmation. If the result is ambiguous, check the posting, portal and inbox before considering another attempt. For a retry, run `put` again, show the review again and get a fresh approval before another `claim`.
     - **Silent submit:** wrap `fetch`/XHR to capture ≥400 bodies *before* retrying (snippet in `reference/ats/_core.md`). A 422 "already applied" means the first send worked.
     - **An error page after the final step ≠ failure.** Go back to the job page and read its status. Never refill blindly.
-11. Log it immediately with `scripts/seekter.mjs add` (§7).
+11. After verification, move the pending record to `applied` with `scripts/seekter.mjs move` (§7). A dashboard stage change records an outcome but never sends an application.
 
 ## 5. Writing (cover letters, free text)
 
@@ -187,12 +191,13 @@ Use the profile's **voice** section and **fact bank**. Engine rules that always 
 - **Terms:** never accept terms of use / codes of conduct on the user's behalf. Cookie banners: reject/decline only.
 - **Never** send emails or messages as the user, post reviews or salaries, pay or subscribe, download untrusted files.
 - **Never submit a value you can't verify.** A wrong answer is worse than a hand-off.
+- **Never send an application without the one-posting approval in §4.** A standing "don't ask" instruction does not waive this gate.
 - **Tabs:** each half-filled or handed-off form keeps its own tab; never `force` through a "Leave site?" prompt. Verify with `tabs_context_mcp` before telling the user a form is waiting.
   - **Open the new tab *before* you start filling, not after.** The failure mode is not forgetting the rule, it is working through a queue in one reused tab: fill a hand-off, navigate that same tab to the next candidate, and the filled form is gone with no warning and no prompt. Measured 24 Sept: two prepared hand-offs (Okta, BambooHR) were both destroyed this way and only surfaced when the user asked where his forms were. **The moment a posting turns into a hand-off, move it to its own tab and never navigate that tab again.** Then run `tabs_context_mcp` at the end of the run and check that one tab exists per pending record before writing the report.
 - If the Chrome extension disconnects: log progress with `scripts/seekter.mjs`, list the queue, ask the user to reopen Chrome. Don't switch to a browser that can't upload files for resume forms.
 - **Don't start side projects.** When the user states a new rule mid-run, save it to the profile (§7 step 2) and go back to applying.
 
-**Stop and ask only when:** a hard knockout answered No · personal data that would need guessing · the role isn't really in scope or its core is local-language writing · money required · a sector marked "ask". Everything else: decide, log, move on. If the user said they're away, don't interrupt at all; collect questions for the report.
+**Stop and ask when:** the §4 submission review is ready · a hard knockout answered No · personal data would need guessing · the role isn't really in scope or its core is local-language writing · money is required · a sector is marked "ask". If the user said they're away, prepare drafts and collect approval requests and other questions for the report; do not submit.
 
 ## 7. Close the run (never skipped)
 
@@ -204,9 +209,9 @@ Use the profile's **voice** section and **fact bank**. Engine rules that always 
     "apply_type": "company-site | easy-apply | email", "location_fit": "A | B | C", "remote_scope": "...",
     "fit": 4, "resume": "<resume type uploaded, e.g. design-system-designer>",
     "why": "one line", "notes": "reason, confirmation number, salary given, hand-off details",
-    "answers": "free-text answers exactly as submitted", "no_index": true}
+    "answers": "free-text answers exactly as prepared or submitted", "no_index": true}
    ```
-   `fit` is the §3 score, given before the form. `url` is always filled; it is what dedup keys on. `answers` is what `claims.mjs` reads for the "no sentence twice" rule, so store the answers exactly as sent. Needs-you items are `"status": "pending"` with the exact action in `notes`. `add` and `move` regenerate `applications/README.md` themselves; set `"no_index": true` in a bulk loop and run `index` once at the end.
+   `fit` is the §3 score, given before the form. `url` is always filled; it is what dedup keys on. `answers` is what `claims.mjs` reads for the "no sentence twice" rule, so store the exact draft and update it if the submitted text differs. Needs-you items are `"status": "pending"` with the exact action in `notes`, including `awaiting submission approval` for prepared drafts. `add` and `move` regenerate `applications/README.md` themselves; set `"no_index": true` in a bulk loop and run `index` once at the end.
 2. **Profile/reference upkeep:** new ATS trap → that vendor's file in `reference/ats/` (a vendor with no file gets one, plus a row in `_core.md`'s table); a form rule that holds across vendors → `reference/ats/_core.md`; new source behaviour → that source's file in `reference/sources/` (a source with no file gets one, plus a row in `_core.md`'s table); a lesson that is not about one source's own mechanics → `reference/sources/_core.md`; new rule, blacklist entry, standard answer or fact → `profile/profile.md`. Edit in place; replace outdated text instead of appending history.
 3. **Write the unworked candidates to `runs/<YYYY-MM-DD>/queue-A.md`** before the report, with one row per posting: source id, role, and the **resolved apply URL**. §1 promises that "the queue survives into the next run", and it does not survive on its own: the harvest lives in a browser tab and in the transcript, and both are gone by the next session. A run that sweeps 250 postings and applies to 8 has found 240 things that cost calls to find and nothing to write down.
    - Record the bucket letter as a **hint, not a verdict**, and say so in the file. The A/B/C split is assigned by regex over the description and matches words like "contractor" and "EMEA" wherever they appear, so a European hybrid office role scores A routinely. The next run opens each one anyway; the letter only decides the order.
@@ -215,7 +220,7 @@ Use the profile's **voice** section and **fact bank**. Engine rules that always 
 4. **Report** to the user, short, and save the same text as `runs/<YYYY-MM-DD>.md` (append `-2`, `-3` for extra runs that day):
    - The source table, with the LinkedIn mode and, in `read` mode, the searches and detail requests used against their limits. A stop signal goes at the very top.
    - **Applied (n):** role · company · why it fits (one line each). Flag low-odds submissions and same-company second roles.
-   - **Needs you (n):** one line each with a direct link and the exact action (CAPTCHA, account, anecdote, T&C, email verification, sector decision).
+   - **Needs you (n):** one line each with a direct link and the exact action (submission approval, CAPTCHA, account, anecdote, T&C, email verification, sector decision). For an approval, include or link the full §4 review; a report count alone is never permission to submit.
    - **On LinkedIn, yours to send (n):** Easy Apply postings and alert-mail postings whose employer board could not be found, one line each with the LinkedIn URL and the resume to pick. Sorted by fit score. If the profile sets a minimum fit for this list (`easy_apply_min_fit`), list only those at or above it and give the rest as one count line ("4 more scored below 3; ask for them"). This is the one place a score shortens a list, because the candidate sends these by hand and asked for it; it never applies to postings Seekter fills itself (§3, "the score orders, it never removes").
    - **Skipped:** grouped by reason. **On hold (same company within the window)** gets its own line, with the earlier role and date, because the user may want to overrule it.
 

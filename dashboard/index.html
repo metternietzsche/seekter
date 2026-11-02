@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Seekter · Control de candidaturas</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Navegación">
+      <div class="brand"><span class="brand-mark">S</span><span>Seekter <small>Control</small></span></div>
+      <nav class="rail-nav" aria-label="Vistas">
+        <button class="nav-button active" type="button" data-view="all">Todas <span id="nav-all">0</span></button>
+        <button class="nav-button" type="button" data-view="review">Por revisar <span id="nav-review">0</span></button>
+        <button class="nav-button" type="button" data-view="active">En curso <span id="nav-active">0</span></button>
+        <button class="nav-button" type="button" data-view="closed">Cerradas <span id="nav-closed">0</span></button>
+      </nav>
+      <div class="rail-note"><span class="live-dot"></span> Tablero local<br><small>Los datos se leen de este repositorio.</small></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="page-header">
+        <div><p class="context">Búsqueda de empleo</p><h1>Candidaturas</h1><p class="intro">Revisa lo preparado, sigue cada conversación y decide qué se envía.</p></div>
+        <button id="refresh" class="refresh" type="button">Actualizar datos</button>
+      </header>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+      <section class="metrics" aria-label="Resumen">
+        <div class="metric urgent"><span>Esperan tu revisión</span><strong id="metric-review">0</strong><small>Antes de cualquier envío</small></div>
+        <div class="metric"><span>Enviadas</span><strong id="metric-applied">0</strong><small>Incluye procesos posteriores</small></div>
+        <div class="metric"><span>Entrevistas</span><strong id="metric-interviewing">0</strong><small>Conversaciones abiertas</small></div>
+        <div class="metric"><span>Ofertas</span><strong id="metric-offer">0</strong><small>Propuestas recibidas</small></div>
+      </section>
+
+      <section class="pipeline" aria-labelledby="pipeline-title">
+        <div class="section-heading"><div><h2 id="pipeline-title">Etapas</h2><p>Estado actual de cada candidatura</p></div><span id="updated-at"></span></div>
+        <div id="stage-track" class="stage-track"></div>
+      </section>
+
+      <section class="crm" aria-label="CRM de candidaturas">
+        <div class="list-panel">
+          <div class="section-heading list-heading"><div><h2>Seguimiento</h2><p id="result-count">0 candidaturas</p></div></div>
+          <div class="filters"><label class="search-label" for="search">Buscar empresa o puesto</label><input id="search" type="search" placeholder="Empresa, puesto, fuente…" autocomplete="off"><select id="status-filter" aria-label="Filtrar por estado"><option value="all">Todos los estados</option><option value="pending">Pendientes</option><option value="applied">Enviadas</option><option value="interviewing">Entrevistas</option><option value="offer">Ofertas</option><option value="rejected">Rechazadas</option><option value="closed">Cerradas</option><option value="skipped">Descartadas</option></select></div>
+          <div id="application-list" class="application-list"></div>
+        </div>
+        <aside class="detail-panel" aria-labelledby="detail-title"><div id="application-detail" class="detail-content"><div class="detail-empty"><div class="empty-glyph">↗</div><h2 id="detail-title">Elige una candidatura</h2><p>Verás sus datos, la revisión del envío y los próximos pasos.</p></div></div></aside>
+      </section>
+      <footer>El tablero registra decisiones y etapas. Enviar una candidatura sigue siendo una acción del agente en Chrome.</footer>
+    </main>
+  </div>
+</body>
+</html>

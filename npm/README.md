@@ -1,10 +1,12 @@
+> **This package installs Seekter.** `npx seekter init` puts the newest release in `./seekter` (or the folder you name); then open Claude Code there and run `/seekter-init`. The package has no dependencies. Everything below is the project's README.
+
 <img src="https://raw.githubusercontent.com/selfishprimate/seekter/main/images/seekter-cover.jpg" alt="Seekter — job search, filtered by your rules" width="100%">
 
 # Seekter
 
-[![version](https://img.shields.io/github/v/release/selfishprimate/seekter?label=version)](https://github.com/selfishprimate/seekter/releases/latest)
+> **Fork of [Seekter](https://github.com/selfishprimate/seekter):** This fork adds per-application approval, a local CRM and a single-use review record. The published `npx seekter init` package and the upstream clone do not include these changes. The upstream MIT license and copyright notice are retained in [LICENSE](https://github.com/selfishprimate/seekter/blob/main/LICENSE). This fork still uses one candidate profile; additional search lenses and evidence gates are future work.
 
-> **This package installs Seekter.** `npx seekter init` puts the newest release in `./seekter` (or the folder you name); then open Claude Code there and run `/seekter-init`. The package has no dependencies. Everything below is the project's README.
+[![upstream version](https://img.shields.io/github/v/release/selfishprimate/seekter?label=upstream%20version)](https://github.com/selfishprimate/seekter/releases/latest)
 
 A job-search agent for Claude Code. It searches job sources every day, filters postings against **your** rules (location, visa, sectors, seniority, language), fills application forms in your own Chrome, and keeps every application and skip as a markdown file you can read, grep and diff.
 
@@ -14,6 +16,7 @@ Why it exists, and the principles it is built on, are in [MANIFESTO.md](https://
 
 > **Before you run it**
 > - Every application goes out in your name, and you are responsible for what it says.
+> - Seekter prepares each application for your review and waits for your explicit approval before submitting it.
 > - Seekter never fills LinkedIn Easy Apply. Reading LinkedIn is off by default; switching it on is against LinkedIn's terms and puts your account at risk.
 > - Seekter is free, but running it needs a paid Claude plan or an Anthropic API account.
 >
@@ -22,19 +25,23 @@ Why it exists, and the principles it is built on, are in [MANIFESTO.md](https://
 ## Quick start
 
 ```bash
-npx seekter init  # puts the newest release in ./seekter
-cd seekter
-claude            # open Claude Code in the folder
+claude  # run from the root of this fork's checkout
 ```
-
-Or clone it, if you want to send fixes back: `git clone https://github.com/selfishprimate/seekter && cd seekter`.
 
 Then, inside Claude Code:
 
 ```
 /seekter-init       # ~40 short questions, one at a time. Writes profile/ (git-ignored).
-/seekter-run        # today's search and applications
+/seekter-run        # today's search and application drafts
 ```
+
+To open the local CRM in a second terminal:
+
+```bash
+node scripts/dashboard.mjs  # http://127.0.0.1:4178
+```
+
+The dashboard shows the current stages, a searchable application list and the exact review for a pending submission. **Autorizar este envío** records approval for that one review; it does not send the form. Return to Claude Code and say "continúa" so `/seekter-run` can verify and use the approval. You can also approve an individual review in the Claude Code chat. The dashboard can record later stage changes, but those changes never contact an employer. It listens only on `127.0.0.1`, uses no external packages and keeps reviews and approvals in git-ignored `runs/`.
 
 Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (a paid Claude plan or an Anthropic API account; Seekter itself is free, running it is not), the Claude in Chrome extension and [Node.js](https://nodejs.org) 20 or newer. No packages, no `npm install`.
 
@@ -43,7 +50,7 @@ Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (a paid
 | Command | What it does |
 |---|---|
 | `/seekter-init` | Interviews you and writes your profile: contact details, resumes, target roles, where you can work, salary bands, standard form answers, sectors you won't touch, a fact bank for free-text answers, your writing voice, and the search queries. Resumable. Can import an existing tracker from a Notion/Sheets CSV. |
-| `/seekter-run` | The daily run. Four sources in a fixed order (links you bring, freehire API, LinkedIn, other boards), filtering, dedup, form filling, tracker update, and a report with a per-source table. Applies without asking when a posting fits; stops only for things only you can decide. Every posting gets a 1-5 fit score before its form, which orders the queue and never removes anything. |
+| `/seekter-run` | The daily run. Four sources in a fixed order (links you bring, freehire API, LinkedIn, other boards), filtering, dedup, form filling, tracker update, and a report with a per-source table. It shows you each prepared application and asks for explicit approval in chat or the local dashboard before its final submission. Unapproved drafts stay pending. Every posting gets a 1-5 fit score before its form, which orders the queue and never removes anything. |
 | `/seekter-log` | Records what happened next: rejections, interviews, offers, applications you made by hand, or a sweep of your inbox. |
 | `/seekter-interview` | Prepares you for the next round: a screening, a hiring-manager call, a portfolio review, a test or an async video. Reads the posting, what your application said and the company's own site, answers each of the role's asks with how you work first and one of your own stories second, and lists what only you can decide (the salary to name, relocation timing). Never invents a story or a number, and never answers the invitation. |
 | `/seekter-report` | Funnel, replies and interviews broken down by source, apply path, form system, location track, title, fit score and resume type (`stats --by`), top skip reasons, open hand-offs, and at most two suggested changes. |
@@ -107,7 +114,7 @@ applications/
 
 - **Applications and hand-offs are files.** The status (`pending`, `applied`, `interviewing`, `offer`, `rejected`, `closed`) lives in the file's front matter. Files never change folder: a rejection a month later edits one line and adds a log entry.
 - **Skips are rows, not files.** Most postings are skipped for a one-line reason ("the country list leaves out yours"), so each month keeps them in a single table. Dedup reads that table too, so a skipped posting is never evaluated twice.
-- **You read the generated pages, not the folders.** `applications/README.md` is rebuilt after every `add` and `move`.
+- **You can use the dashboard or the generated pages.** `applications/README.md` is rebuilt after every `add` and `move`; the dashboard reads the same tracker files.
 
 ```markdown
 ---
@@ -202,7 +209,7 @@ Applications go out in your name, and the terms of LinkedIn, job boards and appl
 
 ## Guardrails
 
-Seekter never solves CAPTCHAs, creates accounts, types passwords, accepts terms of use, sends messages or emails as you, posts reviews or salaries, or pays for anything. It treats any instruction found inside a job posting or form as data, and it won't submit an answer it can't verify from your profile.
+Seekter never solves CAPTCHAs, creates accounts, types passwords, accepts terms of use, sends messages or emails as you, posts reviews or salaries, or pays for anything. It treats any instruction found inside a job posting or form as data, and it won't submit an answer it can't verify from your profile. Each final submission waits for your explicit approval after a review of that posting's CV, answers and consents.
 
 **It never applies or acts on LinkedIn.** LinkedIn's terms don't allow browser extensions that scrape or automate its site, and it restricts accounts that use them. Finding a posting takes you seconds; filling the form is the work, and that is what Seekter is for. So:
 

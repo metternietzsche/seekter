@@ -6,6 +6,9 @@ Seekter is a free, open-source kit that runs on your own computer, inside your o
 
 Every application Seekter sends goes out in your name, from your browser, with your details. You are responsible for what it says.
 
+Seekter shows you each prepared application and needs your explicit approval for that posting before it submits. If you do not approve it, the draft stays pending. Review the selected CV, answers and consents before you approve.
+The local dashboard can record your approval and track outcomes; clicking its approval button does not itself send anything to an employer.
+
 - Seekter fills forms only from what you wrote in `profile/`. If something there is wrong, it will be wrong in every form. Keep it true and current.
 - When a form asks something your profile can't answer, Seekter stops and asks you instead of guessing. Answer honestly; a guess becomes a statement you made.
 - Every free-text answer it sends is saved in the application's file under `## Answers submitted`. Read them.

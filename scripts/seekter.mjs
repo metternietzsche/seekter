@@ -712,7 +712,7 @@ function cmdAdd(a) {
 
 const stripPrivate = (r) => Object.fromEntries(Object.entries(r).filter(([k]) => !k.startsWith("_")));
 
-function cmdMove(a) {
+export function cmdMove(a) {
   if (!STATUSES.includes(a.status)) die(`status must be one of ${pyList(STATUSES)}`);
   const r = find(a.target);
   if (!r) die("not found");

@@ -21,7 +21,7 @@ The goal is a complete `profile/profile.md` (from `templates/profile.md`) and `p
 
 **Before anything else: the disclaimer.** Show this, as one message, before creating a folder or reading a file:
 
-> Before we start: Seekter sends applications in your name and you are responsible for what they say, the terms of the job sites you use are yours to follow, and it runs on your own paid Claude plan with no guarantee of results. Details are in [DISCLAIMER.md](DISCLAIMER.md). Shall we continue? (yes / no)
+> Before we start: Seekter prepares applications in your name and asks you to approve each one before it submits. You are responsible for what they say, the terms of the job sites you use are yours to follow, and it runs on your own paid Claude plan with no guarantee of results. Details are in [DISCLAIMER.md](DISCLAIMER.md). Shall we continue? (yes / no)
 
 - **No**, or anything that is not a yes: stop. Create nothing, write nothing, and say they can run `/seekter-init` again whenever they want.
 - **Yes**: keep the date in `profile/.init-state.json` and write it to the profile's `Disclaimer accepted:` line when the profile is first written. Then run `node scripts/seekter.mjs settings > /dev/null`: it moves an older `profile/search.json` to `profile/settings.json` with its values intact, or copies `templates/settings.json` if there is neither, so a valid settings file is there before the first question. Never copy the template by hand: on an older setup that would shadow the user's `search.json`. Then continue.
@@ -54,7 +54,7 @@ The goal is a complete `profile/profile.md` (from `templates/profile.md`) and `p
     - the browser prerequisite (Claude in Chrome extension, with their webmail logged in in the same Chrome),
     - the LinkedIn alerts to create by hand, one line each from `linkedin.searches`, delivered by Email,
     - that they can drop links they find into `profile/links.txt` (or paste them in chat) and those are filled first,
-    - the next command: `/seekter-run`.
+    - the next command: `/seekter-run`, and the optional local CRM in a second terminal: `node scripts/dashboard.mjs` → `http://127.0.0.1:4178`.
 
 ## Writing the files
 

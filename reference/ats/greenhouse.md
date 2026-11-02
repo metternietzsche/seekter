@@ -77,7 +77,7 @@
   4. real keyboard `<PHONE_LOCAL>`, no country code (field auto-formats)
   Stale "Phone is required." may remain; second Submit goes through. Two "<HOME_COUNTRY>" refs: the one with the dial code is the phone widget.
 - **Location (City):** click → type city → 3 s → click the "`<CITY>`, <HOME_COUNTRY>" suggestion by coordinate.
-- **File upload:** **CV LAST**, then submit immediately — later re-renders drop it ("Resume/CV is required"). `find` → `file_upload`; the input then vanishes and the filename shows (normal).
+- **File upload:** **CV LAST** — later re-renders drop it ("Resume/CV is required"). `find` → `file_upload`; the input then vanishes and the filename shows (normal). While waiting for approval, keep the tab open and verify the CV is still attached immediately before the approved submit.
 - **Scrolling:** window scroll often stuck at `scrollY=0`. Hide the job description:
   ```js
   const jp=document.querySelector('.job-post-container');
@@ -94,7 +94,7 @@
   - Company forms built on Greenhouse (e.g. Miro) may have server-side char limits with no counter (900) and strict phone format: the field's own placeholder shows the shape it wants, which is E.164 with no spaces and no punctuation, so send `<PHONE_E164>`.
   - "How did you hear" with only company channels, no "other" → hand over.
   - `find` may return options unnamed — list texts via JS first.
-- **Submit:** if only stale phone errors remain, submit again. Confirm the thank-you page.
+- **Submit:** if only stale phone errors remain, show the revised review and get approval again before another submit. Confirm the thank-you page.
 
 `okta.com/company/careers/<slug>` is not a Greenhouse board: it is Drupal hosting the Greenhouse questions, so the field ids are `edit-*` and `edit-question-<id>` rather than Greenhouse's own. Plain `<select>` elements with option values `1`/`0` for Yes/No, so the native setter plus a `change` event works; no react-select anywhere.
 
